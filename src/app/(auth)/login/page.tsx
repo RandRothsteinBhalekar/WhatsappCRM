@@ -37,8 +37,8 @@ function LoginPageInner() {
   // page to accept rather than to /dashboard.
   const inviteToken = searchParams.get("invite");
   const t = useTranslations("LoginPage");
-  // Set by /auth/callback when an emailed link (confirmation, password
-  // reset) could not be turned into a session — see src/lib/auth/callback.ts.
+  // Set when an emailed auth link could not be turned into a session
+  // (legacy /auth/callback redirects or better-auth failure params).
   const linkError = searchParams.get("error");
   const reason = searchParams.get("reason");
   const linkErrorMessage =

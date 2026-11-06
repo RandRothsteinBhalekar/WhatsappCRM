@@ -164,7 +164,8 @@ AS $$
 $$;
 
 -- (OWNER TO postgres skipped)
--- (Supabase role GRANT skipped)
+
+-- (Supabase role GRANT skipped)
 
 -- ============================================================
 -- ADD account_id TO EVERY PARENT TENANT TABLE
