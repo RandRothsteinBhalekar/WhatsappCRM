@@ -6,6 +6,7 @@ const h = vi.hoisted(() => ({
   loadAiConfig: vi.fn(),
   buildConversationContext: vi.fn(),
   retrieveKnowledge: vi.fn(),
+  retrieveCatalogue: vi.fn(),
   generateReply: vi.fn(),
   engineSendText: vi.fn(),
   loadAccountMetaCredentials: vi.fn(),
@@ -23,6 +24,10 @@ const h = vi.hoisted(() => ({
 vi.mock('./config', () => ({ loadAiConfig: h.loadAiConfig }))
 vi.mock('./context', () => ({ buildConversationContext: h.buildConversationContext }))
 vi.mock('./knowledge', () => ({ retrieveKnowledge: h.retrieveKnowledge }))
+vi.mock('@/lib/woocommerce/retrieve-products', async (orig) => ({
+  ...(await orig<typeof import('@/lib/woocommerce/retrieve-products')>()),
+  retrieveCatalogue: h.retrieveCatalogue,
+}))
 vi.mock('./generate', () => ({ generateReply: h.generateReply }))
 vi.mock('@/lib/flows/meta-send', () => ({
   engineSendText: h.engineSendText,
@@ -77,6 +82,29 @@ vi.mock('./admin-client', () => ({
 }))
 
 import { dispatchInboundToAiReply } from './auto-reply'
+import { fixtureSnapshot } from '@/lib/woocommerce/catalogue-fixtures'
+import { planConversation } from '@/lib/woocommerce/query-planner'
+import {
+  formatCatalogueExcerpt,
+  selectFromCatalogue,
+  type ProductRetrieval,
+} from '@/lib/woocommerce/retrieve-products'
+
+const snap = fixtureSnapshot()
+
+function retrieval(turns: string[], configured = true): ProductRetrieval {
+  const plan = planConversation(turns, { designs: snap.designs })
+  const sel = selectFromCatalogue(snap.items, plan)
+  return {
+    configured,
+    plan,
+    ...sel,
+    excerpts: sel.items.map(formatCatalogueExcerpt),
+    isKnownPermalink: snap.isKnownPermalink,
+  }
+}
+
+const NO_STORE = retrieval([], false)
 
 const ARGS = {
   accountId: 'acct-1',
@@ -116,6 +144,7 @@ beforeEach(() => {
   h.loadAiConfig.mockResolvedValue(aiConfig())
   h.buildConversationContext.mockResolvedValue([{ role: 'user', content: 'hi' }])
   h.retrieveKnowledge.mockResolvedValue([])
+  h.retrieveCatalogue.mockResolvedValue(NO_STORE)
   h.generateReply.mockResolvedValue({ text: 'Hello!', handoff: false })
   h.engineSendText.mockResolvedValue({ whatsapp_message_id: 'm1' })
   h.loadAccountMetaCredentials.mockResolvedValue({
@@ -145,6 +174,82 @@ describe('dispatchInboundToAiReply — eligibility gates', () => {
     expect(h.retrieveKnowledge).toHaveBeenCalled()
     const systemPrompt = h.generateReply.mock.calls[0][0].systemPrompt as string
     expect(systemPrompt).toContain('Returns accepted within 30 days.')
+  })
+
+  it('grounds the reply in live catalogue rows and facts', async () => {
+    h.retrieveCatalogue.mockResolvedValue(retrieval(['Do you have Heritage Motif in king?']))
+    await dispatchInboundToAiReply(ARGS)
+    const systemPrompt = h.generateReply.mock.calls[0][0].systemPrompt as string
+    expect(systemPrompt).toContain('Live product catalogue')
+    expect(systemPrompt).toContain('Catalogue facts')
+    expect(systemPrompt).toContain('Heritage Motif 7-Piece Set – Stone Grey')
+  })
+
+  it('plans products from earlier customer turns, not only the last line', async () => {
+    h.buildConversationContext.mockResolvedValue([
+      { role: 'user', content: 'Give me bedspread under 100 dollars' },
+      { role: 'assistant', content: 'Which size?' },
+      { role: 'user', content: 'give me link' },
+    ])
+    await dispatchInboundToAiReply(ARGS)
+    expect(h.retrieveCatalogue.mock.calls[0][2]).toEqual([
+      'Give me bedspread under 100 dollars',
+      'give me link',
+    ])
+  })
+
+  it('retries once on an inventory refusal and sends the corrected reply', async () => {
+    const r = retrieval(['Light orange color, queen size bed'])
+    h.retrieveCatalogue.mockResolvedValue(r)
+    h.generateReply
+      .mockResolvedValueOnce({ text: "I don't have access to the live inventory.", handoff: false })
+      .mockResolvedValueOnce({
+        text: `Try Leafora Serenity in Marigold Ember, $89: ${r.items[0].permalink}`,
+        handoff: false,
+      })
+    await dispatchInboundToAiReply(ARGS)
+    expect(h.generateReply).toHaveBeenCalledTimes(2)
+    expect(h.generateReply.mock.calls[1][0].systemPrompt).toContain('Correction:')
+    expect(h.engineSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining('Marigold Ember, $89') }),
+    )
+  })
+
+  it('rolls the reply slot back when Meta send fails', async () => {
+    h.state.conv = {
+      assigned_agent_id: null,
+      ai_autoreply_disabled: false,
+      ai_reply_count: 1,
+    }
+    h.engineSendText.mockRejectedValue(new Error('Meta API error: Authentication Error'))
+    await dispatchInboundToAiReply(ARGS)
+    expect(h.state.updatePayload).toEqual({ ai_reply_count: 0 })
+  })
+
+  it('falls back to the product list when the refusal repeats after the retry', async () => {
+    const r = retrieval(['Do you have Heritage Motif in king?'])
+    h.retrieveCatalogue.mockResolvedValue(r)
+    h.generateReply.mockResolvedValue({
+      text: "I don't have access to the live inventory to check stock levels.",
+      handoff: false,
+    })
+    await dispatchInboundToAiReply(ARGS)
+    expect(h.engineSendText).toHaveBeenCalledWith(
+      expect.objectContaining({ text: expect.stringContaining(r.items[0].permalink) }),
+    )
+  })
+
+  it('hands off when inventory is refused and the catalogue is empty', async () => {
+    h.retrieveCatalogue.mockResolvedValue({ ...retrieval(['Thanks!']), configured: true })
+    h.generateReply.mockResolvedValue({
+      text: 'I am unable to access the live inventory right now.',
+      handoff: false,
+    })
+    await dispatchInboundToAiReply(ARGS)
+    expect(h.engineSendText).not.toHaveBeenCalled()
+    expect(h.state.updatePayload).toEqual(
+      expect.objectContaining({ ai_autoreply_disabled: true }),
+    )
   })
 
   it('stands down when an active message-level automation exists', async () => {

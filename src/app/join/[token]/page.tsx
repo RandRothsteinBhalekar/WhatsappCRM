@@ -59,6 +59,7 @@ interface PeekOk {
   account_name: string;
   role: 'admin' | 'agent' | 'viewer';
   expires_at: string;
+  email?: string | null;
 }
 interface PeekFail {
   ok: false;
@@ -291,21 +292,33 @@ export default function JoinPage() {
           account: (chunks) => <span className="text-primary">{chunks}</span>,
         })}
       </CardTitle>
-      <CardDescription className="text-muted-foreground">
-        {t.rich('joinAs', {
-          role: tRoles(peek.role),
-          date: new Date(peek.expires_at).toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-          }),
-          badge: (chunks) => (
-            <span className="inline-flex items-center gap-1 text-foreground">
-              <ShieldCheck className="size-3.5 text-primary" />
-              {chunks}
-            </span>
-          ),
-        })}
+      <CardDescription className="space-y-1 text-muted-foreground">
+        {peek.email ? (
+          <span className="block">
+            {t.rich('invitedEmail', {
+              address: peek.email,
+              em: (chunks) => (
+                <span className="font-medium text-foreground">{chunks}</span>
+              ),
+            })}
+          </span>
+        ) : null}
+        <span className="block">
+          {t.rich('joinAs', {
+            role: tRoles(peek.role),
+            date: new Date(peek.expires_at).toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            }),
+            badge: (chunks) => (
+              <span className="inline-flex items-center gap-1 text-foreground">
+                <ShieldCheck className="size-3.5 text-primary" />
+                {chunks}
+              </span>
+            ),
+          })}
+        </span>
       </CardDescription>
     </CardHeader>
   );

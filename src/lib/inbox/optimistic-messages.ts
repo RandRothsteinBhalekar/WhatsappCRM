@@ -34,6 +34,10 @@ function sameOutgoingContent(temp: Message, row: Message): boolean {
 
 export function applyRealtimeInsert(prev: Message[], row: Message): Message[] {
   if (prev.some((m) => m.id === row.id)) return prev;
+  // SSE NOTIFY historically omitted the row body; ignore stubs that
+  // lack created_at so the thread doesn't render Invalid Date.
+  if (!row?.id || !row.conversation_id || !row.created_at) return prev;
+  if (Number.isNaN(new Date(row.created_at).getTime())) return prev;
   const tempIndex = prev.findIndex(
     (m) => isPendingTemp(m) && sameOutgoingContent(m, row),
   );

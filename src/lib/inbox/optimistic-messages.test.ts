@@ -70,6 +70,12 @@ describe("applyRealtimeInsert", () => {
     const prev = [msg("real-1")];
     expect(applyRealtimeInsert(prev, msg("real-1"))).toBe(prev);
   });
+
+  it("ignores incomplete realtime stubs without created_at", () => {
+    const prev = [msg("real-1")];
+    const stub = { id: "stub-1", conversation_id: "conv-1" } as Message;
+    expect(applyRealtimeInsert(prev, stub)).toBe(prev);
+  });
 });
 
 describe("confirmedSendUpdate", () => {

@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@/lib/db/supabase-types'
 import { getT } from '@/lib/i18n/translate'
 
 const t = getT('LibErrors')

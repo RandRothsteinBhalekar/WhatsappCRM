@@ -1,5 +1,5 @@
 import { AiError, type ChatMessage, type ProviderResult } from '../types'
-import { MAX_OUTPUT_TOKENS } from '../defaults'
+import { AI_TEMPERATURE, MAX_OUTPUT_TOKENS } from '../defaults'
 import {
   mergeConsecutive,
   normalizeUsage,
@@ -58,6 +58,7 @@ export async function generateAnthropic(args: ProviderArgs): Promise<ProviderRes
         model,
         system: systemPrompt,
         max_tokens: MAX_OUTPUT_TOKENS,
+        temperature: AI_TEMPERATURE,
         messages: normalizeForAnthropic(messages),
       }),
       signal: AbortSignal.timeout(timeoutMs),

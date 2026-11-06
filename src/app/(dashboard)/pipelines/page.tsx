@@ -160,7 +160,7 @@ export default function PipelinesPage() {
       setPipelines(list);
       if (list.length > 0) {
         setSelectedPipelineId((prev) =>
-          prev && list.some((p) => p.id === prev) ? prev : list[0].id,
+          prev && list.some((p: { id: string }) => p.id === prev) ? prev : list[0].id,
         );
       } else {
         setSelectedPipelineId("");
@@ -203,7 +203,7 @@ export default function PipelinesPage() {
     const list = await loadPipelines();
     setPipelines(list);
     if (list.length === 0) setSelectedPipelineId("");
-    else if (!list.some((p) => p.id === selectedPipelineId))
+    else if (!list.some((p: { id: string }) => p.id === selectedPipelineId))
       setSelectedPipelineId(list[0].id);
   }, [loadPipelines, selectedPipelineId]);
 

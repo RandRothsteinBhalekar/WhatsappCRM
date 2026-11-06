@@ -26,11 +26,12 @@
 // ============================================================
 
 import { NextResponse } from "next/server";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
 import { hasMinRole, isAccountRole, type AccountRole } from "./roles";
 import { getT } from "@/lib/i18n/translate";
+
+type AppDb = Awaited<ReturnType<typeof createClient>>;
 
 const t = getT("LibErrors.auth");
 
@@ -82,9 +83,9 @@ export function toErrorResponse(err: unknown): NextResponse {
 // ------------------------------------------------------------
 
 export interface AccountContext {
-  /** Supabase SSR client, RLS scoped to the calling user. */
-  supabase: SupabaseClient;
-  /** `auth.uid()` for the caller. Always defined when this resolves. */
+  /** DB client, RLS scoped to the calling user via auth.uid() GUC. */
+  supabase: AppDb;
+  /** Authenticated user id. Always defined when this resolves. */
   userId: string;
   /** Caller's account_id from their profile row. */
   accountId: string;

@@ -1,0 +1,2 @@
+-- RLS remains enabled. auth.uid() reads app.current_user_id set by the app.
+-- Admin connections use SET LOCAL row_security = off.

@@ -14,10 +14,11 @@
     "noAccount": "계정이 없으신가요?",
     "createAccount": "계정 만들기",
     "linkExpired": "링크가 만료되었습니다. 비밀번호를 재설정하려면 “비밀번호를 잊으셨나요?”에서 새 링크를 요청하세요. 이메일 인증 중이었다면 다시 가입해 주세요.",
-    "linkInvalid": "이 링크로는 로그인할 수 없습니다. 이메일 인증 중이었다면 이미 인증이 완료되었을 수 있으니 아래에서 로그인하세요. 비밀번호 재설정은 새 링크를 요청한 뒤 요청한 브라우저에서 열어 주세요."
+    "linkInvalid": "이 링크로는 로그인할 수 없습니다. 이메일 인증 중이었다면 이미 인증이 완료되었을 수 있으니 아래에서 로그인하세요. 비밀번호 재설정은 새 링크를 요청한 뒤 요청한 브라우저에서 열어 주세요.",
+    "inviteRequired": "이 앱은 초대 전용입니다. 계정을 만들려면 소유자에게 초대 링크를 요청하세요."
   },
   "Sidebar": {
-    "title": "WhatsApp용 CRM 템플릿",
+    "title": "BajajHomeAndLiving",
     "primaryNav": "기본 메뉴",
     "dashboard": "대시보드",
     "inbox": "인박스",
@@ -1658,7 +1659,7 @@
     },
     "invite": {
       "inviteCreated": "초대가 생성되었습니다",
-      "inviteCreatedDesc": "이 링크를 새 팀원과 공유하세요. <bold>{role}</bold> 역할로 가입(또는 로그인)해 계정에 합류할 수 있습니다. 링크는 <bold>{days}일</bold> 동안 유효합니다.",
+      "inviteCreatedDesc": "이 링크를 새 팀원과 공유하세요. 초대된 이메일로 가입해 <bold>{role}</bold> 역할로 합류해야 합니다. 링크는 <bold>{days}일</bold> 동안 유효합니다.",
       "inviteLink": "초대 링크",
       "copy": "복사",
       "saveLinkNow": "지금 이 링크를 저장하세요.",
@@ -1668,7 +1669,7 @@
       "dialogTitle": "팀원 초대",
       "networkError": "서버에 연결할 수 없습니다. 다시 시도할까요?",
       "fallbackAccountName": "우리 wacrm 계정",
-      "dialogDesc": "일회용 초대 링크를 생성합니다. WhatsApp, Slack 등 원하는 채널로 공유하세요 — 이메일 서비스가 필요하지 않습니다.",
+      "dialogDesc": "특정 이메일을 초대하세요. 공유한 일회용 링크로 해당 주소로 가입합니다.",
       "roleLabel": "역할",
       "validForLabel": "링크 유효 기간",
       "days1": "1일",
@@ -1677,7 +1678,7 @@
       "labelTitle": "라벨",
       "optional": "(선택)",
       "labelPlaceholder": "예: Sara — 지원팀",
-      "labelHint": "아래 대기 목록에서 링크를 누구에게 보냈는지 기억하는 데 도움이 됩니다.",
+      "labelHint": "대기 목록에서 이메일 옆에 표시되는 선택 메모입니다.",
       "cancel": "취소",
       "creating": "만드는 중...",
       "generateLink": "링크 생성",
@@ -1685,7 +1686,11 @@
       "copied": "초대 링크가 복사되었습니다",
       "clipboardBlocked": "클립보드 접근이 차단되었습니다 — 링크를 직접 복사하세요",
       "whatsappMessage": "이 링크(유효 기간 {expiresInDays}일)로 wacrm의 {accountName}에 참여하세요: {url}",
-      "createFailed": "초대를 만들지 못했습니다"
+      "createFailed": "초대를 만들지 못했습니다",
+      "emailLabel": "이메일",
+      "emailPlaceholder": "teammate@company.com",
+      "emailHint": "이 이메일만 초대 링크로 계정을 만들 수 있습니다.",
+      "emailInvalid": "유효한 이메일 주소를 입력하세요"
     },
     "tagsAndFields": {
       "title": "필드 & 태그",
@@ -2203,6 +2208,26 @@
       "deleteDoc": "삭제",
       "loading": "불러오는 중…"
     },
+    "woocommerce": {
+      "title": "WooCommerce 상품",
+      "description": "WooCommerce 스토어를 연결하면 AI가 고객에게 답할 때 상품명, 가격, 사이즈, 재고, 상품 페이지 링크를 실시간으로 조회합니다. 상품은 답변마다 가져오며 지식베이스에 캐시되지 않습니다.",
+      "storeUrl": "스토어 URL",
+      "storeUrlHint": "쇼핑몰 오리진, 예: https://bajajhomeandliving.com.au. 더 자세한 상품 정보를 쓰려면 REST API 키를 추가하세요.",
+      "consumerKey": "Consumer key",
+      "consumerKeyHint": "선택 사항인 WooCommerce REST API 키와 시크릿(상품 읽기). 암호화되어 저장됩니다. 비워 두면 공개 Store API를 사용합니다. 둘 다 지우면 삭제됩니다.",
+      "consumerSecret": "Consumer secret",
+      "enable": "실시간 상품 검색 사용",
+      "enableDesc": "켜면 초안, 자동 응답, Playground가 답변 전에 이 스토어에서 일치하는 상품을 검색합니다.",
+      "save": "저장",
+      "remove": "삭제",
+      "loading": "불러오는 중…",
+      "loadFailed": "WooCommerce 설정을 불러오지 못했습니다",
+      "missingStoreUrl": "스토어 URL을 입력하세요.",
+      "saveSuccess": "WooCommerce 스토어를 저장했습니다.",
+      "saveFailed": "WooCommerce 설정을 저장하지 못했습니다.",
+      "removeSuccess": "WooCommerce 설정을 삭제했습니다.",
+      "removeFailed": "WooCommerce 설정을 삭제하지 못했습니다."
+    },
     "quickReplies": {
       "nameRequired": "빠른 답장의 이름을 입력하세요.",
       "saveError": "빠른 답장을 저장하지 못했습니다.",
@@ -2226,26 +2251,30 @@
   },
   "SignupPage": {
     "passwordsMismatch": "비밀번호가 일치하지 않습니다",
-    "passwordTooShort": "비밀번호는 6자 이상이어야 합니다",
+    "passwordTooShort": "비밀번호는 최소 8자 이상이어야 합니다",
     "checkEmailTitle": "이메일을 확인하세요",
     "checkEmailDesc": "<strong>{email}</strong>로 확인 링크를 보냈습니다. 받은 편지함에서 링크를 클릭해 계정을 인증하세요.",
     "backToSignIn": "로그인으로 돌아가기",
     "titleJoin": "계정 만들고 참여하기",
     "title": "계정 만들기",
-    "descJoin": "이메일을 인증한 뒤 초대를 수락해 팀에 참여하세요.",
+    "descJoin": "초대된 이메일을 사용한 뒤 초대를 수락해 팀에 합류하세요.",
     "desc": "WhatsApp용 CRM Template을 시작하세요",
     "fullNameLabel": "이름",
     "fullNamePlaceholder": "홍길동",
     "emailLabel": "이메일",
     "emailPlaceholder": "you@example.com",
     "passwordLabel": "비밀번호",
-    "passwordPlaceholder": "6자 이상",
+    "passwordPlaceholder": "최소 8자",
     "confirmPasswordLabel": "비밀번호 확인",
     "confirmPasswordPlaceholder": "비밀번호를 다시 입력하세요",
     "creating": "계정 만드는 중...",
     "submit": "계정 만들기",
     "haveAccount": "이미 계정이 있으신가요?",
-    "signIn": "로그인"
+    "signIn": "로그인",
+    "titleOwner": "소유자 계정 만들기",
+    "descOwner": "이 설치의 첫 계정입니다. 구성된 소유자 이메일로 가입하세요.",
+    "inviteRequiredTitle": "초대가 필요합니다",
+    "inviteRequiredDesc": "이 앱은 초대 전용입니다. 소유자에게 초대 링크를 요청하거나, 이미 계정이 있으면 로그인하세요."
   },
   "ForgotPasswordPage": {
     "checkEmailTitle": "이메일을 확인하세요",
@@ -2309,7 +2338,8 @@
     "signingOut": "로그아웃 중…",
     "signOutSwitch": "로그아웃 후 다른 이메일 사용",
     "createAndJoin": "계정 만들고 참여하기",
-    "haveAccount": "이미 계정이 있습니다"
+    "haveAccount": "이미 계정이 있습니다",
+    "invitedEmail": "<em>{address}</em>으로 가입하거나 로그인하세요."
   },
   "Notifications": {
     "title": "알림",
@@ -2763,7 +2793,9 @@
         "loadFailed": "초대 목록을 불러오지 못했습니다",
         "roleInvalid": "역할은 admin, agent, viewer 중 하나여야 합니다",
         "labelTooLong": "라벨은 {max}자 이하여야 합니다",
-        "createFailed": "초대를 생성하지 못했습니다"
+        "createFailed": "초대를 생성하지 못했습니다",
+        "emailInvalid": "'email'은 유효한 이메일 주소여야 합니다",
+        "emailDuplicate": "이 이메일에 대한 대기 중 초대가 이미 있습니다"
       },
       "members": {
         "loadFailed": "팀원 목록을 불러오지 못했습니다",
@@ -2827,6 +2859,17 @@
         "savedNotIndexed": "저장되었지만 색인에 실패했습니다({message}). 아직 문서를 검색할 수 없습니다. 재색인을 사용해 다시 시도하세요.",
         "savedKeywordOnly": "키워드 검색만으로 저장되었습니다 — 임베딩 키를 복호화할 수 없습니다(ENCRYPTION_KEY를 확인한 후 키를 다시 입력하세요)."
       }
+    },
+    "woocommerce": {
+      "loadConfigFailed": "WooCommerce 설정을 불러오지 못했습니다",
+      "storeUrlRequired": "store_url이 필요합니다",
+      "storeUrlInvalid": "store_url은 올바른 http(s) URL이어야 합니다",
+      "probeFailed": "해당 URL에서 WooCommerce Store API에 연결할 수 없습니다. 스토어가 공개되어 있고 /wp-json/wc/store/v1/products가 동작하는지 확인하세요.",
+      "restKeysRequired": "Consumer key와 consumer secret을 모두 입력하거나, 둘 다 그대로 두세요.",
+      "restHttpsRequired": "REST API 키는 https 스토어 URL에서만 사용할 수 있습니다.",
+      "restProbeFailed": "WooCommerce가 REST API 키를 거부했습니다. Consumer key, secret, 읽기 권한을 확인하세요.",
+      "saveConfigFailed": "WooCommerce 설정을 저장하지 못했습니다",
+      "deleteConfigFailed": "WooCommerce 설정을 삭제하지 못했습니다"
     },
     "automations": {
       "copyName": "{name} (복사본)",

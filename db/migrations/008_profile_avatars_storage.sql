@@ -1,0 +1,1 @@
+-- Skipped: Supabase Storage migration (008_profile_avatars_storage.sql). Media is on local disk.

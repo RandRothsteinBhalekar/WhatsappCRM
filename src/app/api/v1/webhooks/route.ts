@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     // The roster is small and settings-class — return it whole (the
     // list envelope's cursor is always null here).
     return okList(
-      (data ?? []).map((r) =>
+      (data ?? []).map((r: Record<string, unknown>) =>
         serializeWebhookEndpoint(r as Record<string, unknown>)
       ),
       null

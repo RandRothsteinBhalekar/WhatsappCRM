@@ -246,9 +246,9 @@ export function ImportModal({
       const existing = new Set(
         (existingRows ?? [])
           .map(
-            (r) => (r as { phone_normalized: string | null }).phone_normalized
+            (r: { phone_normalized: string | null }) => r.phone_normalized
           )
-          .filter((p): p is string => !!p)
+          .filter((p: string | null): p is string => !!p)
       );
 
       const toInsert = unique.filter((row) => {

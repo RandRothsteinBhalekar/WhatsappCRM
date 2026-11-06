@@ -78,8 +78,8 @@ vi.mock('@/lib/supabase/server', () => ({
 
 const serviceRole = vi.hoisted(() => ({ lookups: 0 }))
 
-vi.mock('@supabase/supabase-js', () => ({
-  createClient: vi.fn(() => ({
+vi.mock('@/lib/automations/admin-client', () => ({
+  supabaseAdmin: vi.fn(() => ({
     from: vi.fn(() => {
       serviceRole.lookups += 1
       const b: Record<string, unknown> = {}

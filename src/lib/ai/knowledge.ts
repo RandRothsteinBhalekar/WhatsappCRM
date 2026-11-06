@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@/lib/db/supabase-types'
 import type { AiConfig } from './types'
 import { chunkText } from './chunk'
 import { embedTexts, toVectorLiteral } from './embeddings'

@@ -134,4 +134,31 @@ describe('POST /api/ai/config stored key reuse', () => {
     ])
     expect(h.updates[0]).toMatchObject({ base_url: 'https://1.1.1.1/v1', api_key: 'enc:new-key' })
   })
+
+  it('accepts gemini with a freshly entered key', async () => {
+    const res = await post({
+      provider: 'gemini',
+      model: 'gemini-2.0-flash',
+      api_key: 'AIza-new',
+    })
+    expect(res.status).toBe(200)
+    expect(h.validateCalls).toEqual([
+      { provider: 'gemini', apiKey: 'AIza-new', baseUrl: null },
+    ])
+    expect(h.updates[0]).toMatchObject({
+      provider: 'gemini',
+      model: 'gemini-2.0-flash',
+      api_key: 'enc:AIza-new',
+    })
+  })
+
+  it('rejects an unknown provider', async () => {
+    const res = await post({
+      provider: 'cohere',
+      model: 'cmd',
+      api_key: 'x',
+    })
+    expect(res.status).toBe(400)
+    expect(h.updates).toHaveLength(0)
+  })
 })

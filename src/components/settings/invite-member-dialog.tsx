@@ -79,6 +79,7 @@ export function InviteMemberDialog({
   const { account } = useAuth();
   const [role, setRole] = useState<InviteRole>('agent');
   const [expiry, setExpiry] = useState<string>('7');
+  const [email, setEmail] = useState('');
   const [label, setLabel] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<CreatedInvite | null>(null);
@@ -86,6 +87,7 @@ export function InviteMemberDialog({
   function reset() {
     setRole('agent');
     setExpiry('7');
+    setEmail('');
     setLabel('');
     setResult(null);
     setSubmitting(false);
@@ -98,6 +100,11 @@ export function InviteMemberDialog({
     // but a paste can land an over-limit string into state before
     // the limit kicks in on the next keystroke — this is the safety
     // net for that path.
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error(t('emailInvalid'));
+      return;
+    }
     const trimmedLabel = label.trim();
     if (trimmedLabel.length > MAX_LABEL_LEN) {
       toast.error(t('labelTooLong', { max: MAX_LABEL_LEN }));
@@ -110,6 +117,7 @@ export function InviteMemberDialog({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           role,
+          email: trimmedEmail,
           expiresInDays: Number(expiry),
           label: trimmedLabel || undefined,
         }),
@@ -268,6 +276,20 @@ export function InviteMemberDialog({
 
             <div className="space-y-4 py-2">
               <div className="space-y-2">
+                <Label className="text-muted-foreground">{t('emailLabel')}</Label>
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  required
+                  placeholder={t('emailPlaceholder')}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
+                />
+                <p className="text-xs text-muted-foreground">{t('emailHint')}</p>
+              </div>
+
+              <div className="space-y-2">
                 <Label className="text-muted-foreground">{t('roleLabel')}</Label>
                 <Select
                   value={role}
@@ -334,7 +356,7 @@ export function InviteMemberDialog({
               </Button>
               <Button
                 onClick={handleCreate}
-                disabled={submitting}
+                disabled={submitting || !email.trim()}
                 className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {submitting ? (

@@ -1,16 +1,15 @@
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createDbClient } from "@/lib/db/sb-compat";
+import { createServerStorage } from "@/lib/storage/server-storage";
 
-// Lazy, shared service-role client for the Flows engine.
-// Mirrors src/lib/automations/admin-client.ts — same shape so anyone
-// reading either file picks up the convention immediately.
-let _adminClient: SupabaseClient | null = null
+let _admin: ReturnType<typeof build> | null = null;
 
-export function supabaseAdmin(): SupabaseClient {
-  if (!_adminClient) {
-    _adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    )
-  }
-  return _adminClient
+function build() {
+  const db = createDbClient({ bypassRls: true });
+  const storage = createServerStorage({ bypassRls: true });
+  return { ...db, storage };
+}
+
+export function supabaseAdmin() {
+  if (!_admin) _admin = build();
+  return _admin;
 }

@@ -2,10 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
 import { loadAiConfig } from '@/lib/ai/config'
-import { retrieveKnowledge } from '@/lib/ai/knowledge'
-import { generateReply } from '@/lib/ai/generate'
-import { buildSystemPrompt } from '@/lib/ai/defaults'
-import { latestUserMessage } from '@/lib/ai/query'
+import { composeGroundedReply } from '@/lib/ai/compose-reply'
 import { AiError, type ChatMessage } from '@/lib/ai/types'
 import { getT } from '@/lib/i18n/translate'
 
@@ -75,20 +72,14 @@ export async function POST(request: Request) {
       )
     }
 
-    const knowledge = await retrieveKnowledge(
-      supabase,
+    const composed = await composeGroundedReply({
+      db: supabase,
       accountId,
       config,
-      latestUserMessage(messages),
-    )
-    const systemPrompt = buildSystemPrompt({
-      userPrompt: config.systemPrompt,
+      messages,
       mode: 'auto_reply',
-      knowledge,
     })
-
-    const { text, handoff } = await generateReply({ config, systemPrompt, messages })
-    return NextResponse.json({ reply: text, handoff })
+    return NextResponse.json({ reply: composed.text, handoff: composed.handoff })
   } catch (err) {
     if (err instanceof AiError) {
       return NextResponse.json(

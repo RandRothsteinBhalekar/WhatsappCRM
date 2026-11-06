@@ -128,8 +128,15 @@ interface MessageThreadProps {
   onToggleContactPanel?: () => void;
 }
 
-function formatDateSeparator(dateStr: string, t: ReturnType<typeof useTranslations>): string {
+function parseMessageDate(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null;
   const date = new Date(dateStr);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatDateSeparator(dateStr: string, t: ReturnType<typeof useTranslations>): string {
+  const date = parseMessageDate(dateStr);
+  if (!date) return "";
   if (isToday(date)) return t("today");
   if (isYesterday(date)) return t("yesterday");
   return format(date, "MMMM d, yyyy");
@@ -140,7 +147,11 @@ function groupMessagesByDate(messages: Message[]) {
   let currentDate = "";
 
   for (const msg of messages) {
-    const day = format(new Date(msg.created_at), "yyyy-MM-dd");
+    const parsed = parseMessageDate(msg.created_at);
+    // Skip incomplete realtime stubs (NOTIFY without record) rather than
+    // crashing date-fns with RangeError: Invalid time value.
+    if (!parsed) continue;
+    const day = format(parsed, "yyyy-MM-dd");
     if (day !== currentDate) {
       currentDate = day;
       groups.push({ date: msg.created_at, messages: [msg] });

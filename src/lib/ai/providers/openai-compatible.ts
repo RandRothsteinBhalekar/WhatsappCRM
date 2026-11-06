@@ -1,5 +1,5 @@
 import { AiError, type ProviderResult } from '../types'
-import { MAX_OUTPUT_TOKENS } from '../defaults'
+import { AI_TEMPERATURE, MAX_OUTPUT_TOKENS } from '../defaults'
 import {
   mergeConsecutive,
   normalizeUsage,
@@ -124,6 +124,7 @@ export async function generateOpenAiCompatible(
         model,
         messages: [{ role: 'system', content: systemPrompt }, ...mergeConsecutive(messages)],
         max_tokens: MAX_OUTPUT_TOKENS,
+        temperature: AI_TEMPERATURE,
       }),
       signal: AbortSignal.timeout(timeoutMs),
     })

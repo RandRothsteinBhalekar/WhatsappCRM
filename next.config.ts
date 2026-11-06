@@ -100,6 +100,8 @@ const nextConfig: NextConfig = {
    */
   allowedDevOrigins: [
     "*.ngrok-free.app",
+    // Current free-tier hostnames (ngrok 3.x / India region).
+    "*.ngrok-free.dev",
     "*.ngrok.app",
     "*.ngrok.io",
     "*.trycloudflare.com",

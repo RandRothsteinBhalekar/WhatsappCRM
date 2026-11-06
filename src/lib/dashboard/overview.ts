@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@/lib/db/supabase-types'
 
 export const OVERVIEW_RANGES = [1, 7, 30, 90] as const
 export type OverviewRange = (typeof OVERVIEW_RANGES)[number]

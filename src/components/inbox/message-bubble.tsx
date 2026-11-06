@@ -373,7 +373,10 @@ export function MessageBubble({
   const t = useTranslations("Inbox.bubble");
 
   const isAgent = message.sender_type === "agent" || message.sender_type === "bot";
-  const time = format(new Date(message.created_at), "HH:mm");
+  const createdAt = new Date(message.created_at);
+  const time = Number.isNaN(createdAt.getTime())
+    ? ""
+    : format(createdAt, "HH:mm");
   const failure = isAgent ? failureReason(message) : null;
 
   // Row alignment + width cap are owned by <MessageActions> so its hover

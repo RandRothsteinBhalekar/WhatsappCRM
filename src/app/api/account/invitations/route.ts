@@ -26,6 +26,7 @@ import {
   inviteExpiresAt,
   inviteUrl,
 } from "@/lib/auth/invitations";
+import { normalizeEmail } from "@/lib/auth/invite-only";
 import { isAccountRole } from "@/lib/auth/roles";
 import {
   checkRateLimit,
@@ -139,6 +140,11 @@ function getBaseUrl(request: Request): string {
 
 const MAX_LABEL_LEN = 80;
 
+/** Loose but practical email shape check (server still normalizes). */
+function isValidInviteEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 export async function GET() {
   try {
     const ctx = await requireRole("admin");
@@ -146,7 +152,7 @@ export async function GET() {
     const { data, error } = await ctx.supabase
       .from("account_invitations")
       .select(
-        "id, role, label, created_by_user_id, created_at, expires_at, accepted_at, accepted_by_user_id",
+        "id, role, email, label, created_by_user_id, created_at, expires_at, accepted_at, accepted_by_user_id",
       )
       .eq("account_id", ctx.accountId)
       .is("accepted_at", null)
@@ -182,7 +188,12 @@ export async function POST(request: Request) {
     if (!limit.success) return rateLimitResponse(limit);
 
     const body = (await request.json().catch(() => null)) as
-      | { role?: unknown; expiresInDays?: unknown; label?: unknown }
+      | {
+          role?: unknown;
+          email?: unknown;
+          expiresInDays?: unknown;
+          label?: unknown;
+        }
       | null;
 
     const role = body?.role;
@@ -192,6 +203,14 @@ export async function POST(request: Request) {
       // violation surfaced as a 500.
       return NextResponse.json(
         { error: t('account.invitations.roleInvalid') },
+        { status: 400 },
+      );
+    }
+
+    const email = normalizeEmail(body?.email);
+    if (!email || !isValidInviteEmail(email)) {
+      return NextResponse.json(
+        { error: t("account.invitations.emailInvalid") },
         { status: 400 },
       );
     }
@@ -225,15 +244,23 @@ export async function POST(request: Request) {
         account_id: ctx.accountId,
         token_hash: hash,
         role,
+        email,
         created_by_user_id: ctx.userId,
         label,
         expires_at: expiresAt.toISOString(),
       })
-      .select("id, role, label, expires_at, created_at")
+      .select("id, role, email, label, expires_at, created_at")
       .single();
 
     if (error || !data) {
       console.error("[POST /api/account/invitations] insert error:", error);
+      // Unique pending invite per account+email (migration 063).
+      if (error?.code === "23505") {
+        return NextResponse.json(
+          { error: t("account.invitations.emailDuplicate") },
+          { status: 409 },
+        );
+      }
       return NextResponse.json(
         { error: t('account.invitations.createFailed') },
         { status: 500 },

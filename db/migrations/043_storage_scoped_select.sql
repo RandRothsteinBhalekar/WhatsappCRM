@@ -1,0 +1,1 @@
+-- Skipped: Supabase Storage migration (043_storage_scoped_select.sql). Media is on local disk.

@@ -88,6 +88,8 @@ export interface AccountInvitation {
   account_id: string;
   /** Roles offered via invite — owner is never offered. */
   role: Exclude<AccountRole, "owner">;
+  /** Invitee email (normalized lowercase). Required for new invites. */
+  email: string | null;
   created_by_user_id: string | null;
   label: string | null;
   created_at: string;

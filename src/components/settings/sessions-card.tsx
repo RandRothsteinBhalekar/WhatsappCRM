@@ -37,7 +37,7 @@ export function SessionsCard() {
       // triggers the usual redirect.
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) {
-        toast.error(t('signOutFailed', { message: error.message }));
+        toast.error(t('signOutFailed', { message: error.message ?? 'Error' }));
         return;
       }
       window.location.href = '/login';

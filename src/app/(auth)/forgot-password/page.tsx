@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(error.message ?? "Error");
       setLoading(false);
       return;
     }

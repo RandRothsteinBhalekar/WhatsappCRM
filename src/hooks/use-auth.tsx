@@ -11,7 +11,8 @@ import {
   type ReactNode,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { User } from "@supabase/supabase-js";
+import type { User } from "@/lib/db/supabase-types";
+// User shape matches better-auth session user via supabase-compat client
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import {
   canEditSettings as canEditSettingsFor,
@@ -142,17 +143,20 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Shape of the `profiles` select below. */
-interface ProfileRow {
-  id: string;
-  full_name: string | null;
-  email: string;
-  avatar_url: string | null;
-  role: string | null;
-  beta_features: string[] | null;
-  account_id: string | null;
-  account_role: string | null;
-}
+type MeProfileResponse = {
+  profile?: {
+    id: string;
+    full_name: string | null;
+    email: string;
+    avatar_url: string | null;
+    role: string | null;
+    beta_features: string[];
+    account_id: string | null;
+    account_role: string | null;
+  };
+  account?: AccountSummary | null;
+  error?: string;
+};
 
 /**
  * AuthProvider — wrap this around the dashboard layout.
@@ -178,123 +182,71 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // profileLoading back to true on window focus events/token refresh.
   const lastFetchedUserIdRef = useRef<string | null>(null);
 
-  // Shared across init, auth-state-change listener, and the exposed
-  // refreshProfile() callback. Reads the current session's user id and
-  // pulls the matching profile row along with its account summary.
+  // Critical path: dedicated /api/me/profile (raw SQL + optional
+  // bootstrap self-heal) instead of the generic /api/db/query builder.
   const fetchProfile = useCallback(async (userId: string) => {
-    const supabase = createClient();
     setProfileLoading(true);
     setStatusDetail(null);
     lastFetchedUserIdRef.current = userId;
     try {
-      let data: ProfileRow | null = null;
+      let body: MeProfileResponse | null = null;
       for (let attempt = 1; ; attempt++) {
-        const result = await supabase
-          .from("profiles")
-          .select(
-            "id, full_name, email, avatar_url, role, beta_features, account_id, account_role",
-          )
-          .eq("user_id", userId)
-          .maybeSingle();
-
-        if (!result.error) {
-          data = result.data;
-          break;
-        }
-
-        const error = result.error;
-        console.error("[AuthProvider] fetchProfile error:", {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code,
+        const res = await fetch("/api/me/profile", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
         });
-        // One hiccup here used to lock the session read-only for good:
-        // the profile stayed null, so every `useCan` gate answered
-        // false and no page offered a way to recover (issue #471).
-        // Retry, then hand the reason to the UI.
+        body = (await res.json().catch(() => null)) as MeProfileResponse | null;
+
+        if (res.ok && body?.profile) break;
+
+        const message =
+          body?.error ||
+          (res.status === 401
+            ? "Unauthorized"
+            : `profile fetch failed (${res.status})`);
+        console.error("[AuthProvider] fetchProfile error:", {
+          status: res.status,
+          message,
+        });
         if (attempt < PROFILE_FETCH_ATTEMPTS) {
           await sleep(PROFILE_FETCH_RETRY_MS);
           continue;
         }
         lastFetchedUserIdRef.current = null;
-        setStatusDetail(error.message);
+        setStatusDetail(message);
         return;
       }
 
-      if (data) {
-        // Load the account with a plain lookup by id instead of an
-        // embedded FK join. The embed (`account:accounts!inner(...)`)
-        // forces PostgREST to resolve the profiles.account_id →
-        // accounts.id relationship from its schema cache; a stale cache
-        // (common right after a migration adds the FK) makes it fail
-        // hard with PGRST200 and blanks the whole profile — the user
-        // then loses account context everywhere (issue #294). A point
-        // lookup by id needs no relationship inference, so the profile
-        // (with account_id / account_role) still resolves even if the
-        // account name lookup itself can't.
-        let accountRow: AccountSummary | null = null;
-        if (data.account_id) {
-          const { data: account, error: accountErr } = await supabase
-            .from("accounts")
-            // default_currency added in migration 021; narrowed to the
-            // USD fallback below for older schemas where it reads null.
-            .select("id, name, default_currency")
-            .eq("id", data.account_id)
-            .maybeSingle();
-          if (accountErr) {
-            console.error("[AuthProvider] fetchAccount error:", {
-              message: accountErr.message,
-              details: accountErr.details,
-              hint: accountErr.hint,
-              code: accountErr.code,
-            });
-          } else if (account) {
-            accountRow = {
-              id: account.id,
-              name: account.name,
-              default_currency: account.default_currency ?? DEFAULT_CURRENCY,
-            };
-          }
-        }
+      const data = body!.profile!;
+      const accountRole = isAccountRole(data.account_role)
+        ? data.account_role
+        : null;
 
-        // Narrow the DB enum into our AccountRole union. The DB
-        // constraint should make this unconditional, but a future
-        // migration that broadens the enum without updating TS would
-        // otherwise crash here — fall back to null and let UI gates
-        // treat the caller as least-privileged.
-        const accountRole = isAccountRole(data.account_role)
-          ? data.account_role
-          : null;
-
-        setProfile({
-          id: data.id,
-          full_name: data.full_name,
-          email: data.email,
-          avatar_url: data.avatar_url,
-          role: data.role,
-          // `beta_features` is `NOT NULL DEFAULT ARRAY[]` in the DB, but
-          // narrow defensively in case the column hasn't been migrated yet
-          // (older deployments running 011 lazily) — `null` reads as no
-          // opt-ins, which is the safe default for any future beta gate.
-          beta_features: data.beta_features ?? [],
-          account_id: data.account_id ?? null,
-          account_role: accountRole,
-        });
-        setAccount(accountRow);
-        if (!data.account_id || !accountRole) {
-          // The row exists but carries no tenancy. Migration 017 made
-          // both columns NOT NULL for new signups, so this is a user
-          // whose bootstrap didn't complete (handle_new_user swallows a
-          // failure as a WARNING) or one predating that migration.
-          // Every insert and update they attempt will be denied by RLS.
-          setStatusDetail(
-            `profile ${data.id} has no ${!data.account_id ? "account_id" : "account_role"}`,
-          );
-        }
-      } else {
-        lastFetchedUserIdRef.current = null;
-        setStatusDetail("no profiles row for the signed-in user");
+      setProfile({
+        id: data.id,
+        full_name: data.full_name,
+        email: data.email,
+        avatar_url: data.avatar_url,
+        role: data.role,
+        beta_features: data.beta_features ?? [],
+        account_id: data.account_id ?? null,
+        account_role: accountRole,
+      });
+      setAccount(
+        body!.account
+          ? {
+              id: body!.account.id,
+              name: body!.account.name,
+              default_currency:
+                body!.account.default_currency ?? DEFAULT_CURRENCY,
+            }
+          : null,
+      );
+      if (!data.account_id || !accountRole) {
+        setStatusDetail(
+          `profile ${data.id} has no ${!data.account_id ? "account_id" : "account_role"}`,
+        );
       }
     } catch (err) {
       console.error("[AuthProvider] fetchProfile threw:", err);
@@ -324,7 +276,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           error,
         } = await supabase.auth.getSession();
 
-        if (error) console.error("[AuthProvider] getSession error:", error.message);
+        if (error) console.error("[AuthProvider] getSession error:", (error as { message?: string }).message);
 
         if (!mounted) return;
         const currentUser = session?.user ?? null;
@@ -356,7 +308,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
-      const currentUser = session?.user ?? null;
+      const currentUser = (session as { user?: User } | null)?.user ?? null;
       setUser(currentUser);
 
       if (currentUser) {

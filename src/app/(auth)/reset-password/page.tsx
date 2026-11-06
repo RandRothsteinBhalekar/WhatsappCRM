@@ -17,7 +17,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { authClient } from "@/lib/auth/auth-client";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +38,8 @@ type Status = "checking" | "ready" | "expired" | "done";
 export default function ResetPasswordPage() {
   const t = useTranslations("ResetPasswordPage");
   const supabase = createClient();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
 
   const [status, setStatus] = useState<Status>("checking");
   const [password, setPassword] = useState("");
@@ -45,15 +49,19 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     let cancelled = false;
-    // The callback wrote the session cookies server-side; the browser
-    // client reads them here. No user → the link didn't yield a session.
+    if (token) {
+      if (!cancelled) setStatus("ready");
+      return () => {
+        cancelled = true;
+      };
+    }
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!cancelled) setStatus(user ? "ready" : "expired");
     });
     return () => {
       cancelled = true;
     };
-  }, [supabase]);
+  }, [supabase, token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,18 +71,30 @@ export default function ResetPasswordPage() {
       setError(t("passwordsMismatch"));
       return;
     }
-    // Same floor as /signup.
     if (password.length < 6) {
       setError(t("passwordTooShort"));
       return;
     }
 
     setSaving(true);
+    if (token) {
+      const { error: resetError } = await authClient.resetPassword({
+        newPassword: password,
+        token,
+      });
+      setSaving(false);
+      if (resetError) {
+        setError(resetError.message ?? "Error");
+        return;
+      }
+      setStatus("done");
+      return;
+    }
     const { error } = await supabase.auth.updateUser({ password });
     setSaving(false);
 
     if (error) {
-      setError(error.message);
+      setError(error.message ?? "Error");
       return;
     }
     setStatus("done");

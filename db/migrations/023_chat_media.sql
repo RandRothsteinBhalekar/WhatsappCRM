@@ -1,0 +1,1 @@
+-- Skipped: Supabase Storage migration (023_chat_media.sql). Media is on local disk.

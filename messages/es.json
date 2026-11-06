@@ -14,10 +14,11 @@
     "noAccount": "¿No tienes una cuenta?",
     "createAccount": "Crear cuenta",
     "linkExpired": "Ese enlace expiró. Para restablecer la contraseña, usa “¿Olvidaste tu contraseña?” y pide uno nuevo; si estabas confirmando tu correo, regístrate de nuevo.",
-    "linkInvalid": "No se pudo iniciar sesión con ese enlace. Si estabas confirmando tu correo, es posible que ya esté verificado; inicia sesión abajo. Para restablecer la contraseña, pide un enlace nuevo y ábrelo en el mismo navegador desde el que lo solicitaste."
+    "linkInvalid": "No se pudo iniciar sesión con ese enlace. Si estabas confirmando tu correo, es posible que ya esté verificado; inicia sesión abajo. Para restablecer la contraseña, pide un enlace nuevo y ábrelo en el mismo navegador desde el que lo solicitaste.",
+    "inviteRequired": "Esta aplicación es solo por invitación. Pide un enlace a tu propietario para crear una cuenta."
   },
   "Sidebar": {
-    "title": "Plantilla de CRM para WhatsApp",
+    "title": "BajajHomeAndLiving",
     "primaryNav": "Principal",
     "dashboard": "Panel",
     "inbox": "Bandeja de entrada",
@@ -1658,7 +1659,7 @@
     },
     "invite": {
       "inviteCreated": "Invitación creada",
-      "inviteCreatedDesc": "Comparte este enlace con tu nuevo compañero. Podrá registrarse (o iniciar sesión) y unirse a la cuenta como <bold>{role}</bold>. El enlace es válido por <bold>{days} {days, plural, =1 {día} other {días}}</bold>.",
+      "inviteCreatedDesc": "Comparte este enlace con tu nuevo compañero. Debe registrarse con el correo invitado y unirse como <bold>{role}</bold>. El enlace es válido por <bold>{days} {days, plural, =1 {día} other {días}}</bold>.",
       "inviteLink": "Enlace de invitación",
       "copy": "Copiar",
       "saveLinkNow": "Guarda este enlace ahora.",
@@ -1668,7 +1669,7 @@
       "dialogTitle": "Invitar a un compañero",
       "networkError": "No se pudo conectar con el servidor. ¿Intentar de nuevo?",
       "fallbackAccountName": "nuestra cuenta de wacrm",
-      "dialogDesc": "Genera un enlace de invitación de un solo uso. Compártelo por WhatsApp, Slack o el canal que prefieras; no se necesita servicio de correo.",
+      "dialogDesc": "Invita un correo específico. Esa persona se registra con esa dirección usando el enlace de un solo uso que compartes.",
       "roleLabel": "Rol",
       "validForLabel": "Enlace válido por",
       "days1": "1 día",
@@ -1677,7 +1678,7 @@
       "labelTitle": "Etiqueta",
       "optional": "(opcional)",
       "labelPlaceholder": "p. ej. Sara — equipo de soporte",
-      "labelHint": "Te ayuda a recordar a quién enviaste el enlace en la lista de pendientes de abajo.",
+      "labelHint": "Nota opcional junto al correo en la lista de pendientes.",
       "cancel": "Cancelar",
       "creating": "Creando...",
       "generateLink": "Generar enlace",
@@ -1685,7 +1686,11 @@
       "copied": "Enlace de invitación copiado",
       "clipboardBlocked": "Portapapeles bloqueado: copia el enlace manualmente",
       "whatsappMessage": "Únete a {accountName} en wacrm con este enlace (válido por {expiresInDays} días): {url}",
-      "createFailed": "No se pudo crear la invitación"
+      "createFailed": "No se pudo crear la invitación",
+      "emailLabel": "Correo",
+      "emailPlaceholder": "companero@empresa.com",
+      "emailHint": "Solo este correo puede usar el enlace de invitación para crear una cuenta.",
+      "emailInvalid": "Introduce una dirección de correo válida"
     },
     "tagsAndFields": {
       "title": "Campos y etiquetas",
@@ -2203,6 +2208,26 @@
       "deleteDoc": "Eliminar",
       "loading": "Cargando…"
     },
+    "woocommerce": {
+      "title": "Productos WooCommerce",
+      "description": "Conecta tu tienda WooCommerce para que la IA consulte en vivo nombres, precios, tallas, stock y enlaces de producto al responder. Los productos se buscan en cada respuesta; no se guardan en la base de conocimiento.",
+      "storeUrl": "URL de la tienda",
+      "storeUrlHint": "El origen de tu tienda, p. ej. https://bajajhomeandliving.com.au. Agrega una clave REST para usar el catálogo completo.",
+      "consumerKey": "Consumer key",
+      "consumerKeyHint": "Clave y secreto opcionales de la REST API de WooCommerce (lectura de productos). Se guardan cifrados. Déjalos en blanco para seguir usando la Store API pública. Borra ambos para quitarlos.",
+      "consumerSecret": "Consumer secret",
+      "enable": "Usar búsqueda de productos en vivo",
+      "enableDesc": "Si está activo, el borrador, la respuesta automática y el Playground buscan productos coincidentes en esta tienda antes de responder.",
+      "save": "Guardar",
+      "remove": "Eliminar",
+      "loading": "Cargando…",
+      "loadFailed": "Error al cargar la configuración de WooCommerce",
+      "missingStoreUrl": "Introduce la URL de la tienda.",
+      "saveSuccess": "Tienda WooCommerce guardada.",
+      "saveFailed": "Error al guardar la configuración de WooCommerce.",
+      "removeSuccess": "Configuración de WooCommerce eliminada.",
+      "removeFailed": "Error al eliminar la configuración de WooCommerce."
+    },
     "quickReplies": {
       "nameRequired": "Ponle un nombre a la respuesta rápida.",
       "saveError": "No se pudo guardar la respuesta rápida.",
@@ -2226,26 +2251,30 @@
   },
   "SignupPage": {
     "passwordsMismatch": "Las contraseñas no coinciden",
-    "passwordTooShort": "La contraseña debe tener al menos 6 caracteres",
+    "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
     "checkEmailTitle": "Revisa tu correo",
     "checkEmailDesc": "Enviamos un enlace de confirmación a <strong>{email}</strong>. Revisa tu bandeja de entrada y haz clic en el enlace para verificar tu cuenta.",
     "backToSignIn": "Volver a iniciar sesión",
     "titleJoin": "Crear cuenta y unirse",
     "title": "Crear cuenta",
-    "descJoin": "Verifica tu correo y luego acepta la invitación para unirte a tu equipo.",
+    "descJoin": "Usa el correo invitado y luego acepta la invitación para unirte al equipo.",
     "desc": "Empieza a usar la Plantilla de CRM para WhatsApp",
     "fullNameLabel": "Nombre completo",
     "fullNamePlaceholder": "Juan Pérez",
     "emailLabel": "Correo electrónico",
     "emailPlaceholder": "you@example.com",
     "passwordLabel": "Contraseña",
-    "passwordPlaceholder": "Al menos 6 caracteres",
+    "passwordPlaceholder": "Al menos 8 caracteres",
     "confirmPasswordLabel": "Confirmar contraseña",
     "confirmPasswordPlaceholder": "Repite tu contraseña",
     "creating": "Creando cuenta...",
     "submit": "Crear cuenta",
     "haveAccount": "¿Ya tienes una cuenta?",
-    "signIn": "Iniciar sesión"
+    "signIn": "Iniciar sesión",
+    "titleOwner": "Crear cuenta de propietario",
+    "descOwner": "Esta es la primera cuenta de esta instalación. Regístrate con el correo de propietario configurado.",
+    "inviteRequiredTitle": "Se requiere invitación",
+    "inviteRequiredDesc": "Esta aplicación es solo por invitación. Pide un enlace a tu propietario, o inicia sesión si ya tienes cuenta."
   },
   "ForgotPasswordPage": {
     "checkEmailTitle": "Revisa tu correo",
@@ -2309,7 +2338,8 @@
     "signingOut": "Cerrando sesión…",
     "signOutSwitch": "Cerrar sesión y usar otro correo",
     "createAndJoin": "Crear cuenta y unirse",
-    "haveAccount": "Ya tengo una cuenta"
+    "haveAccount": "Ya tengo una cuenta",
+    "invitedEmail": "Regístrate o inicia sesión como <em>{address}</em>."
   },
   "Notifications": {
     "title": "Notificaciones",
@@ -2763,7 +2793,9 @@
         "loadFailed": "Error al cargar las invitaciones",
         "roleInvalid": "El rol debe ser admin, agent o viewer",
         "labelTooLong": "La etiqueta debe tener {max} caracteres o menos",
-        "createFailed": "Error al crear la invitación"
+        "createFailed": "Error al crear la invitación",
+        "emailInvalid": "'email' debe ser una dirección de correo válida",
+        "emailDuplicate": "Ya existe una invitación pendiente para este correo"
       },
       "members": {
         "loadFailed": "Error al cargar los miembros",
@@ -2827,6 +2859,17 @@
         "savedNotIndexed": "Guardado, pero la indexación falló ({message}). El documento aún no aparece en las búsquedas; usa Reindexar para reintentar.",
         "savedKeywordOnly": "Guardado solo con búsqueda por palabras clave: no se pudo descifrar tu clave de embeddings (revisa ENCRYPTION_KEY y vuelve a ingresar la clave)."
       }
+    },
+    "woocommerce": {
+      "loadConfigFailed": "Error al cargar la configuración de WooCommerce",
+      "storeUrlRequired": "store_url es obligatorio",
+      "storeUrlInvalid": "store_url debe ser una URL http(s) válida",
+      "probeFailed": "No se pudo alcanzar la Store API de WooCommerce en esa URL. Comprueba que la tienda sea pública y que /wp-json/wc/store/v1/products funcione.",
+      "restKeysRequired": "Introduce la consumer key y el consumer secret, o deja ambos sin cambios.",
+      "restHttpsRequired": "La clave REST solo puede usarse con una URL https.",
+      "restProbeFailed": "WooCommerce rechazó la clave REST. Revisa la consumer key, el secret y que el permiso de lectura esté activo.",
+      "saveConfigFailed": "Error al guardar la configuración de WooCommerce",
+      "deleteConfigFailed": "Error al eliminar la configuración de WooCommerce"
     },
     "automations": {
       "copyName": "{name} (Copia)",

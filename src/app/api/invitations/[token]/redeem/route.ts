@@ -18,7 +18,7 @@
 // ============================================================
 
 import { NextResponse } from "next/server";
-import type { PostgrestError } from "@supabase/supabase-js";
+import type { PostgrestError } from "@/lib/db/supabase-types";
 
 import { hashInviteToken } from "@/lib/auth/invitations";
 import {

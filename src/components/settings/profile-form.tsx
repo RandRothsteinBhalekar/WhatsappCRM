@@ -149,7 +149,7 @@ export function ProfileForm() {
         })
         .eq('user_id', user.id);
       if (updateError) {
-        throw new Error(t('saveFailed', { message: updateError.message }));
+        throw new Error(t('saveFailed', { message: updateError.message ?? 'Error' }));
       }
 
       // Email change goes through Supabase Auth, which emails a
@@ -165,7 +165,7 @@ export function ProfileForm() {
         if (emailError) {
           // Partial success: name/avatar saved but email didn't.
           toast.success(t('profileSaved'));
-          toast.error(t('emailChangeFailed', { message: emailError.message }));
+          toast.error(t('emailChangeFailed', { message: emailError.message ?? 'Error' }));
           setSaving(false);
           await refreshProfile();
           return;

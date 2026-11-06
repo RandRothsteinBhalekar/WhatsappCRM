@@ -1,9 +1,9 @@
-import type { SupabaseClient } from '@supabase/supabase-js'
+import type { SupabaseClient } from '@/lib/db/supabase-types'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import type { AiConfig } from './types'
 
 interface AiConfigRow {
-  provider: 'openai' | 'anthropic' | 'openai_compatible'
+  provider: 'openai' | 'anthropic' | 'openai_compatible' | 'gemini'
   model: string
   base_url: string | null
   api_key: string

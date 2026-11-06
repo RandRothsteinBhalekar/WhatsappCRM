@@ -3,10 +3,7 @@ import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit'
 import { loadAiConfig } from '@/lib/ai/config'
 import { buildConversationContext } from '@/lib/ai/context'
-import { retrieveKnowledge } from '@/lib/ai/knowledge'
-import { generateReply } from '@/lib/ai/generate'
-import { buildSystemPrompt } from '@/lib/ai/defaults'
-import { latestUserMessage } from '@/lib/ai/query'
+import { composeGroundedReply } from '@/lib/ai/compose-reply'
 import { logAiUsage } from '@/lib/ai/usage'
 import { supabaseAdmin } from '@/lib/ai/admin-client'
 import { AiError } from '@/lib/ai/types'
@@ -50,7 +47,7 @@ export async function POST(request: Request) {
     // row means "not yours / not found" either way.
     const { data: conversation, error: convErr } = await supabase
       .from('conversations')
-      .select('id')
+      .select('id, contact_id')
       .eq('id', conversationId)
       .maybeSingle()
     if (convErr) {
@@ -92,22 +89,16 @@ export async function POST(request: Request) {
       )
     }
 
-    // Ground the draft in the account's knowledge base (best-effort —
-    // returns [] when there's no KB or retrieval fails).
-    const knowledge = await retrieveKnowledge(
-      supabase,
+    // Knowledge base + live catalogue → LLM → guard, same as auto-reply.
+    const composed = await composeGroundedReply({
+      db: supabase,
       accountId,
       config,
-      latestUserMessage(messages),
-    )
-
-    const systemPrompt = buildSystemPrompt({
-      userPrompt: config.systemPrompt,
+      messages,
       mode: 'draft',
-      knowledge,
+      contactId:
+        typeof conversation.contact_id === 'string' ? conversation.contact_id : null,
     })
-
-    const { text, usage } = await generateReply({ config, systemPrompt, messages })
 
     // Record spend on the account's BYO key. Best-effort + via the
     // service role (the log has no `authenticated` INSERT policy). This
@@ -117,19 +108,26 @@ export async function POST(request: Request) {
     //  - it's fire-and-forget (`void`), not awaited, so the response
     //    isn't held for a DB round-trip.
     try {
-      void logAiUsage(supabaseAdmin(), {
-        accountId,
-        conversationId,
-        mode: 'draft',
-        provider: config.provider,
-        model: config.model,
-        usage,
-      })
+      const admin = supabaseAdmin()
+      for (const usage of composed.usages) {
+        void logAiUsage(admin, {
+          accountId,
+          conversationId,
+          mode: 'draft',
+          provider: config.provider,
+          model: config.model,
+          usage,
+        })
+      }
     } catch (logErr) {
       console.error('[ai/draft] usage log skipped:', logErr)
     }
 
-    return NextResponse.json({ draft: text })
+    const draft = composed.handoff
+      ? "I don't have a matching product in the live catalogue for that request — I'll check with the team and follow up."
+      : composed.text
+
+    return NextResponse.json({ draft })
   } catch (err) {
     if (err instanceof AiError) {
       return NextResponse.json(

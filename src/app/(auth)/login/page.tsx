@@ -40,12 +40,15 @@ function LoginPageInner() {
   // Set by /auth/callback when an emailed link (confirmation, password
   // reset) could not be turned into a session — see src/lib/auth/callback.ts.
   const linkError = searchParams.get("error");
+  const reason = searchParams.get("reason");
   const linkErrorMessage =
     linkError === "link_expired"
       ? t("linkExpired")
       : linkError === "link_invalid"
         ? t("linkInvalid")
         : null;
+  const reasonMessage =
+    reason === "invite_required" ? t("inviteRequired") : null;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,7 +67,7 @@ function LoginPageInner() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(error.message ?? "Error");
       setLoading(false);
       return;
     }
@@ -108,6 +111,11 @@ function LoginPageInner() {
             {linkErrorMessage && !error && (
               <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
                 {linkErrorMessage}
+              </div>
+            )}
+            {reasonMessage && !error && !linkErrorMessage && (
+              <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+                {reasonMessage}
               </div>
             )}
             {error && (

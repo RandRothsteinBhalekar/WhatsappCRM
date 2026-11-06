@@ -1,4 +1,4 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@/lib/db/supabase-types';
 
 const DEFAULT_TAG_COLOR = '#3b82f6';
 

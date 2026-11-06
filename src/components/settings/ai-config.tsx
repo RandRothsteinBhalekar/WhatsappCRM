@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { SettingsPanelHead } from './settings-panel-head';
 import { AiKnowledgeCard } from './ai-knowledge';
+import { WooCommerceConfigCard } from './woocommerce-config';
 import { AI_PROVIDER_DEFAULT_MODEL } from '@/lib/ai/defaults';
 import type { AiProvider } from '@/lib/ai/types';
 import type { AccountMember } from '@/types';
@@ -42,12 +43,14 @@ const HANDOFF_QUEUE = '__queue__';
 const PROVIDER_LABEL: Record<Exclude<AiProvider, 'openai_compatible'>, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic (Claude)',
+  gemini: 'Google Gemini',
 };
 
 const KEY_PLACEHOLDER: Record<AiProvider, string> = {
   openai: 'sk-...',
   anthropic: 'sk-ant-...',
   openai_compatible: 'your-api-key',
+  gemini: 'AIza...',
 };
 
 export function AiConfig() {
@@ -295,6 +298,9 @@ export function AiConfig() {
                     <SelectItem value="anthropic">
                       {PROVIDER_LABEL.anthropic}
                     </SelectItem>
+                    <SelectItem value="gemini">
+                      {PROVIDER_LABEL.gemini}
+                    </SelectItem>
                     <SelectItem value="openai_compatible">
                       {t('providerOpenAiCompatible')}
                     </SelectItem>
@@ -517,6 +523,8 @@ export function AiConfig() {
             </div>
           </CardContent>
         </Card>
+
+        <WooCommerceConfigCard accountId={accountId} canEdit={canEdit} />
 
         <AiKnowledgeCard
           accountId={accountId}

@@ -1,30 +1,43 @@
 name: wacrm
 
 services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-wacrm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-wacrm}
+      POSTGRES_DB: ${POSTGRES_DB:-wacrm}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - wacrm_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
   app:
     build:
       context: .
-      # NEXT_PUBLIC_* vars are inlined at build time — forward them
-      # from .env.local as build args. Changing any of them requires
-      # a rebuild (docker compose up --build).
       args:
-        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-}
         NEXT_PUBLIC_APP_LOCALE: ${NEXT_PUBLIC_APP_LOCALE:-en}
-    # Runtime (server-only) secrets come from .env.local; they are
-    # never baked into the image.
     env_file:
       - .env.local
-    # The server always listens on 3000 inside the container. Pinned
-    # here because `environment` wins over `env_file`, so a stray PORT
-    # in .env.local can't desync the app from the mapping and the
-    # healthcheck below.
     environment:
       PORT: 3000
-    # Host side only — HOST_PORT=8080 publishes the app on :8080.
+      DATABASE_URL: ${DATABASE_URL:-postgres://wacrm:wacrm@db:5432/wacrm}
+      MEDIA_ROOT: /data/media
+    volumes:
+      - wacrm_media:/data/media
     ports:
       - '${HOST_PORT:-3000}:3000'
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test:
@@ -38,3 +51,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+volumes:
+  wacrm_pgdata:
+  wacrm_media:

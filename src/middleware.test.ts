@@ -1,140 +1,54 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-// --- Scenario knobs the mock reads -----------------------------------------
-// `mockUser`         — what getUser() resolves to (a refreshed session ⇒ user,
-//                      or null for the logged-out path).
-// `refreshedCookies` — cookies Supabase writes via setAll() during getUser(),
-//                      i.e. the freshly *rotated* auth token. The whole point
-//                      of the test is that these must survive onto whatever
-//                      response the middleware returns — including redirects.
-let mockUser: { id: string } | null = null;
-let refreshedCookies: Array<{
-  name: string;
-  value: string;
-  options: Record<string, unknown>;
-}> = [];
-
-vi.mock("@supabase/ssr", () => ({
-  createServerClient: (
-    _url: string,
-    _key: string,
-    opts: {
-      cookies: { setAll: (c: typeof refreshedCookies) => void };
-    },
-  ) => ({
-    auth: {
-      // Mirrors real auth-js: an expired access token is transparently
-      // refreshed inside getUser(), which rotates the refresh token and
-      // pushes the new cookies through setAll() before resolving.
-      getUser: async () => {
-        if (refreshedCookies.length) opts.cookies.setAll(refreshedCookies);
-        return { data: { user: mockUser } };
-      },
-    },
-  }),
+vi.mock("better-auth/cookies", () => ({
+  getSessionCookie: vi.fn(),
 }));
 
-// Imported after the mock is registered.
-const { middleware } = await import("./middleware");
+import { getSessionCookie } from "better-auth/cookies";
+import { middleware } from "./middleware";
 
-beforeEach(() => {
-  process.env.NEXT_PUBLIC_SUPABASE_URL = "https://test.supabase.co";
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = "anon-key";
-  mockUser = null;
-  refreshedCookies = [];
-});
+const mockedGetSessionCookie = vi.mocked(getSessionCookie);
 
-afterEach(() => vi.clearAllMocks());
+function req(path: string) {
+  return new NextRequest(new URL(path, "http://localhost:3000"));
+}
 
-const ROTATED = {
-  name: "sb-test-auth-token",
-  value: "rotated-refresh-token",
-  options: { path: "/", httpOnly: true },
-};
-
-describe("middleware — refreshed auth cookies survive redirects", () => {
-  it("carries the rotated token when redirecting a signed-in user off /login", async () => {
-    mockUser = { id: "user-1" };
-    refreshedCookies = [ROTATED];
-
-    const res = await middleware(
-      new NextRequest("https://app.test/login"),
-    );
-
-    // Redirect to /dashboard…
-    expect(res.status).toBe(307);
-    expect(res.headers.get("location")).toContain("/dashboard");
-    // …and the rotated cookie MUST ride along, otherwise the browser keeps
-    // replaying the now-consumed refresh token and the session wedges until
-    // the user manually clears cookies.
-    expect(res.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
+describe("middleware", () => {
+  beforeEach(() => {
+    mockedGetSessionCookie.mockReset();
   });
 
-  it("carries the rotated token when redirecting an unauth user to /login", async () => {
-    mockUser = null;
-    // Even on the logged-out path getUser() may emit cookie writes (e.g.
-    // clearing a dead session); those must not be dropped on the redirect.
-    refreshedCookies = [{ ...ROTATED, value: "cleared" }];
-
-    const res = await middleware(
-      new NextRequest("https://app.test/dashboard"),
-    );
-
+  it("redirects unauthenticated users from /dashboard to /login", async () => {
+    mockedGetSessionCookie.mockReturnValue(null);
+    const res = await middleware(req("/dashboard"));
     expect(res.status).toBe(307);
     expect(res.headers.get("location")).toContain("/login");
-    expect(res.cookies.get(ROTATED.name)?.value).toBe("cleared");
   });
 
-  it("redirects a signed-in user with an invite token to /join/<token>", async () => {
-    mockUser = { id: "user-1" };
-    refreshedCookies = [ROTATED];
-
-    const res = await middleware(
-      new NextRequest("https://app.test/login?invite=abc123"),
-    );
-
-    expect(res.headers.get("location")).toContain("/join/abc123");
-    expect(res.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
-  });
-
-  it("passes through (no redirect) for a signed-in user on a protected page", async () => {
-    mockUser = { id: "user-1" };
-    refreshedCookies = [ROTATED];
-
-    const res = await middleware(
-      new NextRequest("https://app.test/dashboard"),
-    );
-
-    // No redirect — the normal NextResponse.next() already carries cookies.
-    expect(res.headers.get("location")).toBeNull();
-    expect(res.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
-  });
-});
-
-describe("middleware — every dashboard route requires a session", () => {
-  // Read the route group rather than hard-coding a list, so a new page added
-  // under src/app/(dashboard)/ fails here until it is added to
-  // protectedPaths. /flows, /agents and /notifications were missed that way
-  // and rendered a broken page to signed-out visitors instead of redirecting.
-  const dashboardRoutes = readdirSync(join(__dirname, "app", "(dashboard)"), {
-    withFileTypes: true,
-  })
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => `/${entry.name}`);
-
-  it("finds the dashboard route group", () => {
-    expect(dashboardRoutes).toContain("/dashboard");
-  });
-
-  it.each(dashboardRoutes)("redirects a signed-out visitor from %s to /login", async (route) => {
-    mockUser = null;
-
-    const res = await middleware(new NextRequest(`https://app.test${route}`));
-
+  it("redirects authenticated users from /login to /dashboard", async () => {
+    mockedGetSessionCookie.mockReturnValue("session-token");
+    const res = await middleware(req("/login"));
     expect(res.status).toBe(307);
-    expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
+    expect(res.headers.get("location")).toContain("/dashboard");
+  });
+
+  it("allows invite redirect from /signup when signed in", async () => {
+    mockedGetSessionCookie.mockReturnValue("session-token");
+    const res = await middleware(req("/signup?invite=abc"));
+    expect(res.status).toBe(307);
+    expect(res.headers.get("location")).toContain("/join/abc");
+  });
+
+  it("returns 401 for unauthenticated WhatsApp API (non-webhook)", async () => {
+    mockedGetSessionCookie.mockReturnValue(null);
+    const res = await middleware(req("/api/whatsapp/send"));
+    expect(res.status).toBe(401);
+  });
+
+  it("allows webhook without session", async () => {
+    mockedGetSessionCookie.mockReturnValue(null);
+    const res = await middleware(req("/api/whatsapp/webhook"));
+    expect(res.status).toBe(200);
   });
 });

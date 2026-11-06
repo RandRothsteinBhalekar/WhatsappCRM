@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { supabaseAdmin } from '@/lib/automations/admin-client'
 import {
   ForbiddenError,
   UnauthorizedError,
@@ -54,22 +54,6 @@ async function resolveAccountId(
     .maybeSingle()
   if (error || !data?.account_id) return null
   return data.account_id as string
-}
-
-// Lazy-initialised service-role client. We need it to detect a
-// phone_number_id already claimed by a *different* user — under RLS,
-// the user's own session can't see other users' rows, so the conflict
-// would be invisible without the service role.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let _adminClient: any = null
-function supabaseAdmin() {
-  if (!_adminClient) {
-    _adminClient = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-  }
-  return _adminClient
 }
 
 /**

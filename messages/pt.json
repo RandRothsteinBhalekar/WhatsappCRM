@@ -14,10 +14,11 @@
     "noAccount": "Não tem uma conta?",
     "createAccount": "Criar conta",
     "linkExpired": "Esse link expirou. Para redefinir a senha, use “Esqueceu a senha?” para pedir um novo; se estava confirmando seu e-mail, cadastre-se novamente.",
-    "linkInvalid": "Não foi possível entrar com esse link. Se estava confirmando seu e-mail, ele já pode estar verificado — basta entrar abaixo. Para redefinir a senha, peça um novo link e abra-o no mesmo navegador em que o solicitou."
+    "linkInvalid": "Não foi possível entrar com esse link. Se estava confirmando seu e-mail, ele já pode estar verificado — basta entrar abaixo. Para redefinir a senha, peça um novo link e abra-o no mesmo navegador em que o solicitou.",
+    "inviteRequired": "Este aplicativo é somente por convite. Peça um link ao proprietário para criar uma conta."
   },
   "Sidebar": {
-    "title": "Modelo de CRM para WhatsApp",
+    "title": "BajajHomeAndLiving",
     "primaryNav": "Principal",
     "dashboard": "Painel",
     "inbox": "Caixa de entrada",
@@ -1658,7 +1659,7 @@
     },
     "invite": {
       "inviteCreated": "Convite criado",
-      "inviteCreatedDesc": "Compartilhe este link com o novo colega. Ele poderá se cadastrar (ou entrar) e ingressar na conta como <bold>{role}</bold>. O link é válido por <bold>{days} {days, plural, =1 {dia} other {dias}}</bold>.",
+      "inviteCreatedDesc": "Compartilhe este link com o novo colega. É preciso se cadastrar com o e-mail convidado e entrar como <bold>{role}</bold>. O link vale por <bold>{days} {days, plural, =1 {dia} other {dias}}</bold>.",
       "inviteLink": "Link do convite",
       "copy": "Copiar",
       "saveLinkNow": "Salve este link agora.",
@@ -1668,7 +1669,7 @@
       "dialogTitle": "Convidar um colega",
       "networkError": "Não foi possível conectar ao servidor. Tentar novamente?",
       "fallbackAccountName": "nossa conta do wacrm",
-      "dialogDesc": "Gere um link de convite de uso único. Compartilhe pelo WhatsApp, Slack ou qualquer outro canal — não é preciso serviço de e-mail.",
+      "dialogDesc": "Convide um e-mail específico. A pessoa se cadastra com esse endereço usando o link único que você compartilha.",
       "roleLabel": "Função",
       "validForLabel": "Link válido por",
       "days1": "1 dia",
@@ -1677,7 +1678,7 @@
       "labelTitle": "Rótulo",
       "optional": "(opcional)",
       "labelPlaceholder": "ex.: Sara — equipe de suporte",
-      "labelHint": "Ajuda você a lembrar para quem enviou o link na lista de pendentes abaixo.",
+      "labelHint": "Nota opcional mostrada ao lado do e-mail na lista de pendentes.",
       "cancel": "Cancelar",
       "creating": "Criando...",
       "generateLink": "Gerar link",
@@ -1685,7 +1686,11 @@
       "copied": "Link do convite copiado",
       "clipboardBlocked": "Área de transferência bloqueada — copie o link manualmente",
       "whatsappMessage": "Entre em {accountName} no wacrm usando este link (válido por {expiresInDays} dias): {url}",
-      "createFailed": "Falha ao criar o convite"
+      "createFailed": "Falha ao criar o convite",
+      "emailLabel": "E-mail",
+      "emailPlaceholder": "colega@empresa.com",
+      "emailHint": "Somente este e-mail pode usar o link do convite para criar uma conta.",
+      "emailInvalid": "Informe um endereço de e-mail válido"
     },
     "tagsAndFields": {
       "title": "Campos e tags",
@@ -2203,6 +2208,26 @@
       "deleteDoc": "Excluir",
       "loading": "Carregando…"
     },
+    "woocommerce": {
+      "title": "Produtos WooCommerce",
+      "description": "Conecte sua loja WooCommerce para a IA consultar ao vivo nomes, preços, tamanhos, estoque e links de produto ao responder. Os produtos são buscados a cada resposta — nada é armazenado na base de conhecimento.",
+      "storeUrl": "URL da loja",
+      "storeUrlHint": "A origem da sua loja, ex.: https://bajajhomeandliving.com.au. Adicione uma chave REST para usar o catálogo completo.",
+      "consumerKey": "Consumer key",
+      "consumerKeyHint": "Chave e segredo opcionais da REST API do WooCommerce (leitura de produtos). Ficam criptografados. Deixe em branco para continuar na Store API pública. Apague os dois para removê-los.",
+      "consumerSecret": "Consumer secret",
+      "enable": "Usar busca de produtos ao vivo",
+      "enableDesc": "Quando ativo, o rascunho, a resposta automática e o Playground buscam produtos correspondentes nesta loja antes de responder.",
+      "save": "Salvar",
+      "remove": "Remover",
+      "loading": "Carregando…",
+      "loadFailed": "Falha ao carregar a configuração do WooCommerce",
+      "missingStoreUrl": "Informe a URL da loja.",
+      "saveSuccess": "Loja WooCommerce salva.",
+      "saveFailed": "Falha ao salvar a configuração do WooCommerce.",
+      "removeSuccess": "Configuração do WooCommerce removida.",
+      "removeFailed": "Falha ao remover a configuração do WooCommerce."
+    },
     "quickReplies": {
       "nameRequired": "Dê um nome à resposta rápida.",
       "saveError": "Não foi possível salvar a resposta rápida.",
@@ -2226,26 +2251,30 @@
   },
   "SignupPage": {
     "passwordsMismatch": "As senhas não coincidem",
-    "passwordTooShort": "A senha deve ter pelo menos 6 caracteres",
+    "passwordTooShort": "A senha deve ter pelo menos 8 caracteres",
     "checkEmailTitle": "Verifique seu e-mail",
     "checkEmailDesc": "Enviamos um link de confirmação para <strong>{email}</strong>. Verifique sua caixa de entrada e clique no link para confirmar sua conta.",
     "backToSignIn": "Voltar ao login",
     "titleJoin": "Criar conta e entrar na equipe",
     "title": "Criar conta",
-    "descJoin": "Confirme seu e-mail e depois aceite o convite para entrar na sua equipe.",
+    "descJoin": "Use o e-mail convidado e depois aceite o convite para entrar na equipe.",
     "desc": "Comece a usar o Modelo de CRM para WhatsApp",
     "fullNameLabel": "Nome completo",
     "fullNamePlaceholder": "João Silva",
     "emailLabel": "E-mail",
     "emailPlaceholder": "voce@exemplo.com",
     "passwordLabel": "Senha",
-    "passwordPlaceholder": "Pelo menos 6 caracteres",
+    "passwordPlaceholder": "Pelo menos 8 caracteres",
     "confirmPasswordLabel": "Confirmar senha",
     "confirmPasswordPlaceholder": "Repita sua senha",
     "creating": "Criando conta...",
     "submit": "Criar conta",
     "haveAccount": "Já tem uma conta?",
-    "signIn": "Entrar"
+    "signIn": "Entrar",
+    "titleOwner": "Criar conta do proprietário",
+    "descOwner": "Esta é a primeira conta nesta instalação. Cadastre-se com o e-mail do proprietário configurado.",
+    "inviteRequiredTitle": "Convite necessário",
+    "inviteRequiredDesc": "Este aplicativo é somente por convite. Peça um link ao proprietário ou entre se já tiver uma conta."
   },
   "ForgotPasswordPage": {
     "checkEmailTitle": "Verifique seu e-mail",
@@ -2309,7 +2338,8 @@
     "signingOut": "Saindo…",
     "signOutSwitch": "Sair e usar outro e-mail",
     "createAndJoin": "Criar conta e entrar na equipe",
-    "haveAccount": "Já tenho uma conta"
+    "haveAccount": "Já tenho uma conta",
+    "invitedEmail": "Cadastre-se ou entre como <em>{address}</em>."
   },
   "Notifications": {
     "title": "Notificações",
@@ -2763,7 +2793,9 @@
         "loadFailed": "Falha ao carregar os convites",
         "roleInvalid": "A função deve ser admin, agent ou viewer",
         "labelTooLong": "O rótulo deve ter no máximo {max} caracteres",
-        "createFailed": "Falha ao criar o convite"
+        "createFailed": "Falha ao criar o convite",
+        "emailInvalid": "'email' deve ser um endereço de e-mail válido",
+        "emailDuplicate": "Já existe um convite pendente para este e-mail"
       },
       "members": {
         "loadFailed": "Falha ao carregar os membros",
@@ -2827,6 +2859,17 @@
         "savedNotIndexed": "Salvo, mas a indexação falhou ({message}). O documento ainda não pode ser encontrado na busca; use Reindexar para tentar novamente.",
         "savedKeywordOnly": "Salvo apenas com busca por palavras-chave — não foi possível descriptografar sua chave de embeddings (verifique a ENCRYPTION_KEY e informe a chave novamente)."
       }
+    },
+    "woocommerce": {
+      "loadConfigFailed": "Falha ao carregar a configuração do WooCommerce",
+      "storeUrlRequired": "store_url é obrigatório",
+      "storeUrlInvalid": "store_url deve ser uma URL http(s) válida",
+      "probeFailed": "Não foi possível acessar a Store API do WooCommerce nesse URL. Verifique se a loja é pública e se /wp-json/wc/store/v1/products funciona.",
+      "restKeysRequired": "Informe a consumer key e o consumer secret, ou deixe os dois como estão.",
+      "restHttpsRequired": "A chave REST só pode ser usada com uma URL https.",
+      "restProbeFailed": "O WooCommerce recusou a chave REST. Confira a consumer key, o secret e se a permissão de leitura está ativa.",
+      "saveConfigFailed": "Falha ao salvar a configuração do WooCommerce",
+      "deleteConfigFailed": "Falha ao excluir a configuração do WooCommerce"
     },
     "automations": {
       "copyName": "{name} (Cópia)",

@@ -1,12 +1,9 @@
 import { supabaseAdmin } from './admin-client'
 import { loadAiConfig } from './config'
 import { buildConversationContext } from './context'
-import { retrieveKnowledge } from './knowledge'
-import { generateReply } from './generate'
-import { buildSystemPrompt } from './defaults'
+import { composeGroundedReply } from './compose-reply'
 import { buildHandoffSummary } from './handoff'
 import { logAiUsage } from './usage'
-import { latestUserMessage } from './query'
 import {
   engineSendText,
   loadAccountMetaCredentials,
@@ -122,24 +119,14 @@ export async function dispatchInboundToAiReply(
       await showTypingIndicator(db, accountId, inboundMessageId)
     }
 
-    // Ground the reply in the account's knowledge base (best-effort).
-    const knowledge = await retrieveKnowledge(
+    // Knowledge base + live catalogue → LLM → guard (one corrective retry).
+    const composed = await composeGroundedReply({
       db,
       accountId,
       config,
-      latestUserMessage(messages),
-    )
-
-    const systemPrompt = buildSystemPrompt({
-      userPrompt: config.systemPrompt,
-      mode: 'auto_reply',
-      knowledge,
-    })
-
-    const { text, handoff, usage } = await generateReply({
-      config,
-      systemPrompt,
       messages,
+      mode: 'auto_reply',
+      contactId,
     })
 
     // Record token spend on the account's BYO key. Fire-and-forget so it
@@ -147,16 +134,19 @@ export async function dispatchInboundToAiReply(
     // swallows its own errors, so the floating promise can't reject.
     // Logged regardless of handoff — the provider call happened either
     // way.
-    void logAiUsage(db, {
-      accountId,
-      conversationId,
-      mode: 'auto_reply',
-      provider: config.provider,
-      model: config.model,
-      usage,
-    })
+    for (const usage of composed.usages) {
+      void logAiUsage(db, {
+        accountId,
+        conversationId,
+        mode: 'auto_reply',
+        provider: config.provider,
+        model: config.model,
+        usage,
+      })
+    }
 
-    if (handoff || !text) {
+    const text = composed.text
+    if (composed.handoff || !text) {
       // The model can't (or shouldn't) answer — stop auto-replying on
       // this thread and hand it to a human. We (a) pause the bot here
       // (sticky until re-enabled), (b) route the conversation to the
@@ -210,17 +200,49 @@ export async function dispatchInboundToAiReply(
     }
     if (claimed !== true) return
 
-    await engineSendText({
-      accountId,
-      userId: configOwnerUserId,
-      conversationId,
-      contactId,
-      text,
-      aiGenerated: true,
-    })
+    try {
+      await engineSendText({
+        accountId,
+        userId: configOwnerUserId,
+        conversationId,
+        contactId,
+        text,
+        aiGenerated: true,
+      })
+    } catch (sendErr) {
+      // The slot was claimed before the send. A Meta auth failure used to
+      // leave the count incremented with no bubble, and after the cap the
+      // banner still said "replying automatically" while every later
+      // inbound was skipped. Give the slot back so a fixed token can reply.
+      console.error('[ai auto-reply] Meta send failed:', sendErr)
+      try {
+        await releaseClaimedReplySlot(db, conversationId)
+      } catch (releaseErr) {
+        console.error('[ai auto-reply] failed to roll back reply slot:', releaseErr)
+      }
+    }
   } catch (err) {
     console.error('[ai auto-reply] dispatch failed:', err)
   }
+}
+
+/** Undo one `claim_ai_reply_slot` after the WhatsApp send did not land. */
+async function releaseClaimedReplySlot(
+  db: ReturnType<typeof supabaseAdmin>,
+  conversationId: string,
+): Promise<void> {
+  const { data, error } = await db
+    .from('conversations')
+    .select('ai_reply_count')
+    .eq('id', conversationId)
+    .maybeSingle()
+  if (error || !data) return
+  const current = Number(data.ai_reply_count)
+  const next = Number.isFinite(current) ? Math.max(0, current - 1) : 0
+  await db
+    .from('conversations')
+    .update({ ai_reply_count: next })
+    .eq('id', conversationId)
 }
 
 async function hasNewerInbound(

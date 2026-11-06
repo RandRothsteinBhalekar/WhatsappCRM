@@ -8,7 +8,7 @@
 // "node"` with no jsdom — see vitest.config.ts).
 // ============================================================
 
-import type { EmailOtpType } from '@supabase/supabase-js';
+import type { EmailOtpType } from '@/lib/db/supabase-types';
 
 /** Where a link lands when it carries no usable `next`. */
 export const DEFAULT_NEXT_PATH = '/dashboard';

@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MessageSquare, CheckCircle, UsersRound } from "lucide-react";
+import { MessageSquare, UsersRound, Loader2, Lock } from "lucide-react";
 
 // `useSearchParams` opts the component out of static prerendering
 // unless wrapped in Suspense — same pattern as /login.
@@ -30,10 +30,8 @@ export default function SignupPage() {
 function SignupPageInner() {
   const searchParams = useSearchParams();
   // When the user lands here from `/join/<token>` we carry the
-  // invite token in the query so it survives the signup → email
-  // verification → redirect round-trip. `emailRedirectTo` below
-  // sends the verified user to /join/<token> so they land on the
-  // redeem step instead of being dropped on /dashboard.
+  // invite token so signup can pass it to the server gate and then
+  // land on /join/<token> to redeem.
   const inviteToken = searchParams.get("invite");
   const t = useTranslations("SignupPage");
 
@@ -43,8 +41,57 @@ function SignupPageInner() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [policyLoading, setPolicyLoading] = useState(!inviteToken);
+  const [ownerBootstrapAllowed, setOwnerBootstrapAllowed] = useState(false);
+  const [invitedEmail, setInvitedEmail] = useState<string | null>(null);
   const supabase = createClient();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      if (inviteToken) {
+        try {
+          const res = await fetch(
+            `/api/invitations/${encodeURIComponent(inviteToken)}/peek`,
+            { cache: "no-store" },
+          );
+          const body = (await res.json()) as {
+            ok?: boolean;
+            email?: string | null;
+          };
+          if (!cancelled && body.ok && body.email) {
+            setInvitedEmail(body.email);
+            setEmail(body.email);
+          }
+        } catch {
+          // Peek failure still allows the form; server signup gate decides.
+        } finally {
+          if (!cancelled) setPolicyLoading(false);
+        }
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/auth/signup-policy", { cache: "no-store" });
+        const body = (await res.json()) as { ownerBootstrapAllowed?: boolean };
+        if (!cancelled) {
+          setOwnerBootstrapAllowed(Boolean(body.ownerBootstrapAllowed));
+        }
+      } catch {
+        if (!cancelled) setOwnerBootstrapAllowed(false);
+      } finally {
+        if (!cancelled) setPolicyLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [inviteToken]);
+
+  const canShowForm = Boolean(inviteToken) || ownerBootstrapAllowed;
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,82 +102,75 @@ function SignupPageInner() {
       return;
     }
 
-    if (password.length < 6) {
+    if (password.length < 8) {
       setError(t("passwordTooShort"));
       return;
     }
 
     setLoading(true);
 
-    // Always name our own origin as the place the confirmation link
-    // returns to. Previously this was left unset unless an invite was
-    // involved, so Supabase fell back to its Site URL — which on a
-    // freshly-created or self-hosted project is `http://localhost:3000`
-    // (issue #595) — and even when the Site URL was right the link
-    // landed on `/` with an unexchanged `?code=`, so the user had to
-    // sign in again after verifying. /auth/callback exchanges the link
-    // for a session and forwards to `next` (issue #592). Supabase still
-    // has to allow this origin under Authentication → URL Configuration
-    // → Redirect URLs; see docs/auth-emails.md.
-    const next = inviteToken
-      ? `/join/${encodeURIComponent(inviteToken)}`
-      : "/dashboard";
-    const emailRedirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-
-    const { error } = await supabase.auth.signUp({
+    const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
         },
-        emailRedirectTo,
+        inviteToken: inviteToken || undefined,
       },
     });
 
-    if (error) {
-      setError(error.message);
+    if (signUpError) {
+      setError(signUpError.message ?? "Error");
       setLoading(false);
       return;
     }
 
-    setSuccess(true);
-    setLoading(false);
+    // better-auth autoSignIn: true — prefer hard nav so cookies hit middleware.
+    const destination = inviteToken
+      ? `/join/${encodeURIComponent(inviteToken)}`
+      : "/dashboard";
+    if (data.session) {
+      window.location.href = destination;
+      return;
+    }
+
+    // No session (edge case) — send them to login / join.
+    window.location.href = inviteToken
+      ? `/login?invite=${encodeURIComponent(inviteToken)}`
+      : "/login";
   };
 
-  if (success) {
+  if (policyLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!canShowForm) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md border-border bg-card">
           <CardHeader className="items-center text-center">
             <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <CheckCircle className="h-6 w-6 text-primary" />
+              <Lock className="h-6 w-6 text-primary" />
             </div>
             <CardTitle className="text-xl text-foreground">
-              {t("checkEmailTitle")}
+              {t("inviteRequiredTitle")}
             </CardTitle>
             <CardDescription className="text-muted-foreground">
-              {t.rich("checkEmailDesc", {
-                email,
-                strong: (chunks) => (
-                  <span className="text-foreground">{chunks}</span>
-                ),
-              })}
+              {t("inviteRequiredDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link
-              href={
-                inviteToken
-                  ? `/login?invite=${encodeURIComponent(inviteToken)}`
-                  : "/login"
-              }
-            >
+            <Link href="/login">
               <Button
                 variant="outline"
                 className="w-full border-border text-muted-foreground hover:bg-muted hover:text-foreground"
               >
-                {t("backToSignIn")}
+                {t("signIn")}
               </Button>
             </Link>
           </CardContent>
@@ -151,10 +191,18 @@ function SignupPageInner() {
             )}
           </div>
           <CardTitle className="text-xl text-foreground">
-            {inviteToken ? t("titleJoin") : t("title")}
+            {inviteToken
+              ? t("titleJoin")
+              : ownerBootstrapAllowed
+                ? t("titleOwner")
+                : t("title")}
           </CardTitle>
           <CardDescription className="text-muted-foreground">
-            {inviteToken ? t("descJoin") : t("desc")}
+            {inviteToken
+              ? t("descJoin")
+              : ownerBootstrapAllowed
+                ? t("descOwner")
+                : t("desc")}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -191,6 +239,7 @@ function SignupPageInner() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                readOnly={Boolean(invitedEmail)}
                 className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
@@ -206,6 +255,7 @@ function SignupPageInner() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={8}
                 className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
@@ -221,6 +271,7 @@ function SignupPageInner() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
+                minLength={8}
                 className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
